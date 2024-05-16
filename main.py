@@ -1,5 +1,5 @@
 from seller_automation import *
-#Weekly report - how many for the week, what states, what colors, how many returns
+
 marble_asin = "B0BF7X892K"
 grey_asin = "B0C6RFYZR9"
 marble_sku = "Y1-L0AP-MBM6"
