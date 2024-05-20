@@ -74,4 +74,14 @@ def get_refund_info(finances):
             quantity = return_info["QuantityShipped"]
             total_quantity[sku] = total_quantity[sku] + quantity
     return total_quantity, total_refund_deductions
+def get_balance_info(finances):
+    group_list = finances.payload['FinancialEventGroupList']
+    total_balance=0
+    for financial_event in group_list:
+        balance = financial_event['OriginalTotal']
+        if balance['CurrencyCode'] == 'USD':
+            total_balance = balance['CurrencyAmount']
+            break
+    return total_balance
+
 

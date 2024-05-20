@@ -13,7 +13,7 @@ prev7_sales_time = (prev7_begin, prev7_end)
 begin = (datetime.utcnow() - timedelta(days=7)).isoformat() + "-05:00"
 end = (datetime.utcnow().isoformat()) + "-05:00"
 sales_time = (begin, end)
-
+begin_balance = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
 
 try:
     marble_sales_api_resp = Sales().get_order_metrics(sales_time, Granularity.TOTAL, granularityTimeZone='US/Eastern', asin=marble_asin)
@@ -22,6 +22,8 @@ try:
     prev7_grey_sales_api_resp = Sales().get_order_metrics(prev7_sales_time, Granularity.TOTAL, granularityTimeZone='US/Eastern', asin=grey_asin)
     last_week_orders = Orders().get_orders(CreatedAfter=(datetime.utcnow() - timedelta(days=7)).isoformat())
     previous_week_orders = Orders().get_orders(CreatedBefore=(datetime.utcnow() - timedelta(days=7)).isoformat(), CreatedAfter=(datetime.utcnow() - timedelta(days=14)).isoformat())
+    refund_finances = Finances().list_financial_events(PostedAfter=begin)
+    balance_finances = Finances().list_financial_event_groups(FinancialEventGroupStartedAfter=begin)
 except Exception as e:
     print(f"Could not perform API call on Sales(): {e}")
     raise
@@ -31,8 +33,7 @@ sorted_states = get_popular_states(last_week_orders)
 sorted_states_p7 = get_popular_states(previous_week_orders)
 marble_units, marble_sales = get_sales_summary(marble_sales_api_resp)
 prev7_marble_units, prev7_marble_sales = get_sales_summary(prev7_marble_sales_api_resp)
-finances = Finances().list_financial_events(PostedAfter=begin)
-total_refund_units, total_refund_deductions = get_refund_info(finances)
+total_refund_units, total_refund_deductions = get_refund_info(refund_finances)
 print(total_refund_units)
 if marble_sku in total_refund_units:
     marble_sku_refund_string = f"There were <font color=\"red\">{total_refund_units[marble_sku]}</font> {marble_name} refunds, deducting <font color=\"red\">${abs(round(total_refund_deductions[marble_sku], 2))}</font>"
@@ -53,6 +54,12 @@ if percent_change < 100:
 else:
     percent_change_str = f"<font color=\"green\">+{percent_change - 100}%</font>"
 
+balance = get_balance_info(balance_finances)
+if balance < 0:
+    balance_string = f"<font color=\"red\">${balance}</font> USD"
+else:
+    balance_string = f"<font color=\"green\">${balance}</font> USD"
+
 test_html= f"""\
 <html>
 <h2 id="{marble_name}">{marble_name}</h2>
@@ -70,6 +77,7 @@ test_html= f"""\
 <p>{marble_sku_refund_string}</p>
 <p>{grey_sku_refund_string}</p>
 <p> The most popular states were <b>{sorted_states}</b> this week. Last weeks most popular states were <b>{sorted_states_p7}</b></p>
+<p> Current Amazon Account balance is {balance_string} </p>
 </html>
         """
 
